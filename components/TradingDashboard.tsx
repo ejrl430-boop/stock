@@ -75,6 +75,9 @@ export default function TradingDashboard() {
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
   const [isBeginnerGuideExpanded, setIsBeginnerGuideExpanded] = useState(false);
 
+  // Price lock state for order book guide
+  const [lockedPrices, setLockedPrices] = useState<Record<string, { entryZone: string; tp1: number; tp2: number; sl: number; lockedAt: number }>>({});
+
   // Manual configuration mode
   const [isManualMode, setIsManualMode] = useState(false);
   const [manualStartCandleTime, setManualStartCandleTime] = useState<number | null>(null);
@@ -449,6 +452,28 @@ export default function TradingDashboard() {
     setManualStartCandleTime(null);
     setIsManualMode(false);
     setSelectedFibLevelForTP(null);
+  };
+
+  const handleTogglePriceLock = (symbol: string, strategy: string, currentStratInfo: any) => {
+    const key = `${symbol}-${strategy}`;
+    setLockedPrices((prev) => {
+      if (prev[key]) {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      } else {
+        return {
+          ...prev,
+          [key]: {
+            entryZone: currentStratInfo.entryZone,
+            tp1: currentStratInfo.tp1,
+            tp2: currentStratInfo.tp2,
+            sl: currentStratInfo.sl,
+            lockedAt: Date.now()
+          }
+        };
+      }
+    });
   };
 
   // Click on row of Fibonacci Risk Reward table
@@ -1320,7 +1345,16 @@ export default function TradingDashboard() {
             {/* Right Area: Strategy Card for the selected stock */}
             <aside className="pro-strategy-sidebar">
               {(() => {
-                const stratInfo = getStrategyData(ticker, selectedStrategy);
+                const rawStratInfo = getStrategyData(ticker, selectedStrategy);
+                const lockKey = `${ticker}-${selectedStrategy}`;
+                const isLocked = !!lockedPrices[lockKey];
+                const stratInfo = isLocked ? {
+                  ...rawStratInfo,
+                  entryZone: lockedPrices[lockKey].entryZone,
+                  tp1: lockedPrices[lockKey].tp1,
+                  tp2: lockedPrices[lockKey].tp2,
+                  sl: lockedPrices[lockKey].sl,
+                } : rawStratInfo;
                 const gainerObj = fmpGainers.find(g => g.symbol === ticker);
                 const valUsd = gainerObj ? (gainerObj.valueUsd || gainerObj.volume * gainerObj.price) : 0;
                 const rvolVal = gainerObj ? gainerObj.rvol : 1.0;
@@ -1433,7 +1467,27 @@ export default function TradingDashboard() {
 
                       {/* Pro Order Guide */}
                       <div className="pro-order-guide-panel">
-                        <div className="guide-header-line">미국 프로 트레이더 진입 매뉴얼</div>
+                        <div className="guide-header-line" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span>미국 프로 트레이더 진입 매뉴얼</span>
+                          <button 
+                            className={`price-lock-btn ${isLocked ? "active" : ""}`}
+                            onClick={() => handleTogglePriceLock(ticker, selectedStrategy, rawStratInfo)}
+                            title={isLocked ? "추천 가격 고정 해제" : "현재 추천 가격 고정하기"}
+                            style={{
+                              backgroundColor: isLocked ? "rgba(245, 158, 11, 0.15)" : "rgba(255, 255, 255, 0.05)",
+                              border: isLocked ? "1px solid var(--color-warning)" : "1px solid var(--border-color)",
+                              color: isLocked ? "var(--color-warning)" : "var(--text-muted)",
+                              padding: "3px 8px",
+                              borderRadius: "6px",
+                              fontSize: "10px",
+                              fontWeight: "700",
+                              cursor: "pointer",
+                              transition: "all 0.2s ease"
+                            }}
+                          >
+                            {isLocked ? "🔒 추천가 고정됨" : "🔓 추천가 고정"}
+                          </button>
+                        </div>
                         
                         <div className="order-target-line tp2">
                           <div className="left">
@@ -2844,6 +2898,16 @@ export default function TradingDashboard() {
           margin-bottom: 4px;
           border-bottom: 1px solid rgba(255, 255, 255, 0.03);
           padding-bottom: 6px;
+        }
+
+        .price-lock-btn:hover {
+          background-color: rgba(255, 255, 255, 0.08) !important;
+          color: var(--text-main) !important;
+        }
+
+        .price-lock-btn.active:hover {
+          background-color: rgba(245, 158, 11, 0.25) !important;
+          color: #fcd34d !important; /* light yellow */
         }
 
         .order-target-line {
