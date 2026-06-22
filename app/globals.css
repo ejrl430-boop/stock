@@ -1,0 +1,111 @@
+/* Global Dark Theme Trading Dashboard CSS */
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  
+  /* Color Palette */
+  --bg-main: #0b0e14;
+  --bg-card: #151a24;
+  --bg-card-hover: #1e2533;
+  --bg-input: #1a202c;
+  
+  --border-color: #232a38;
+  --border-focus: #3b82f6;
+  
+  --text-main: #f3f4f6;
+  --text-muted: #8b9bb4;
+  --text-dim: #54657e;
+  
+  --color-up: #00c878;      /* Neon Green */
+  --color-down: #ff3b69;    /* Neon Red */
+  --color-accent: #3b82f6;  /* Neon Blue */
+  --color-warning: #f59e0b; /* Amber */
+  --color-success: #10b981; /* Emerald */
+  
+  /* Fibonacci Line Colors */
+  --fib-golden: #ffd700;
+  --fib-0382: #4ade80;
+  --fib-0500: #60a5fa;
+  --fib-0618: #a78bfa;
+  --fib-0786: #f472b6;
+  --fib-0886: #fb923c;
+  --fib-other: #94a3b8;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Animations */
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-main);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-dim);
+}
+
+/* Common Utilities */
+.glow-text-green {
+  text-shadow: 0 0 10px rgba(0, 200, 120, 0.4);
+}
+
+.glow-text-red {
+  text-shadow: 0 0 10px rgba(255, 59, 105, 0.4);
+}
