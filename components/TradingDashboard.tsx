@@ -76,7 +76,15 @@ export default function TradingDashboard() {
   const [isBeginnerGuideExpanded, setIsBeginnerGuideExpanded] = useState(false);
 
   // Price lock state for order book guide
-  const [lockedPrices, setLockedPrices] = useState<Record<string, { entryZone: string; tp1: number; tp2: number; sl: number; lockedAt: number }>>({});
+  const [lockedPrices, setLockedPrices] = useState<Record<string, { 
+    entryZone: string; 
+    tp1: number; 
+    tp2: number; 
+    sl: number; 
+    customEntryPrice?: number;
+    lockedAt: number; 
+  }>>({});
+  const [customEntryInput, setCustomEntryInput] = useState("");
 
   // Manual configuration mode
   const [isManualMode, setIsManualMode] = useState(false);
@@ -725,6 +733,59 @@ export default function TradingDashboard() {
     };
   };
 
+  // Sync custom entry input text when symbol/strategy changes
+  useEffect(() => {
+    const key = `${ticker}-${selectedStrategy}`;
+    if (lockedPrices[key] && lockedPrices[key].customEntryPrice !== undefined) {
+      setCustomEntryInput(lockedPrices[key].customEntryPrice!.toString());
+    } else {
+      setCustomEntryInput("");
+    }
+  }, [ticker, selectedStrategy, lockedPrices]);
+
+  const handleApplyCustomEntry = (symbol: string, strategy: string, priceStr: string) => {
+    const price = parseFloat(priceStr);
+    if (isNaN(price) || price <= 0) return;
+    
+    const key = `${symbol}-${strategy}`;
+    const rawStratInfo = getStrategyData(symbol, strategy as any);
+    
+    const slVal = rawStratInfo.sl;
+    const risk = Math.max(0.01, price - slVal);
+    
+    let tp1Val = price + risk * 1.5;
+    let tp2Val = price + risk * 3.0;
+    
+    if (strategy === "vwap") {
+      tp1Val = price + risk * 2.0;
+      tp2Val = rawStratInfo.tp2;
+    } else if (strategy === "fibonacci") {
+      tp1Val = rawStratInfo.tp1;
+      tp2Val = rawStratInfo.tp2;
+    }
+    
+    setLockedPrices((prev) => ({
+      ...prev,
+      [key]: {
+        entryZone: `내 진입가: $${price.toFixed(2)}`,
+        tp1: tp1Val,
+        tp2: tp2Val,
+        sl: slVal,
+        customEntryPrice: price,
+        lockedAt: Date.now()
+      }
+    }));
+  };
+
+  const handleResetCustomEntry = (symbol: string, strategy: string) => {
+    const key = `${symbol}-${strategy}`;
+    setLockedPrices((prev) => {
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  };
+
   // 3대 전략 매칭 랭킹 데이터 메모이제이션 (성능 병목 해결)
   const rankedStrategyData = useMemo(() => {
     const data = fmpGainers.map((g) => {
@@ -1348,13 +1409,44 @@ export default function TradingDashboard() {
                 const rawStratInfo = getStrategyData(ticker, selectedStrategy);
                 const lockKey = `${ticker}-${selectedStrategy}`;
                 const isLocked = !!lockedPrices[lockKey];
-                const stratInfo = isLocked ? {
-                  ...rawStratInfo,
-                  entryZone: lockedPrices[lockKey].entryZone,
-                  tp1: lockedPrices[lockKey].tp1,
-                  tp2: lockedPrices[lockKey].tp2,
-                  sl: lockedPrices[lockKey].sl,
-                } : rawStratInfo;
+                
+                const customPrice = lockedPrices[lockKey]?.customEntryPrice;
+                
+                const stratInfo = (() => {
+                  if (customPrice !== undefined) {
+                    const entryVal = customPrice;
+                    const slVal = rawStratInfo.sl;
+                    const risk = Math.max(0.01, entryVal - slVal);
+                    
+                    let tp1Val = entryVal + risk * 1.5;
+                    let tp2Val = entryVal + risk * 3.0;
+                    
+                    if (selectedStrategy === "vwap") {
+                      tp1Val = entryVal + risk * 2.0;
+                      tp2Val = rawStratInfo.tp2;
+                    } else if (selectedStrategy === "fibonacci") {
+                      tp1Val = rawStratInfo.tp1;
+                      tp2Val = rawStratInfo.tp2;
+                    }
+                    
+                    return {
+                      ...rawStratInfo,
+                      entryZone: `내 진입가: $${entryVal.toFixed(2)}`,
+                      tp1: tp1Val,
+                      tp2: tp2Val,
+                      sl: slVal,
+                    };
+                  } else if (isLocked) {
+                    return {
+                      ...rawStratInfo,
+                      entryZone: lockedPrices[lockKey].entryZone,
+                      tp1: lockedPrices[lockKey].tp1,
+                      tp2: lockedPrices[lockKey].tp2,
+                      sl: lockedPrices[lockKey].sl,
+                    };
+                  }
+                  return rawStratInfo;
+                })();
                 const gainerObj = fmpGainers.find(g => g.symbol === ticker);
                 const valUsd = gainerObj ? (gainerObj.valueUsd || gainerObj.volume * gainerObj.price) : 0;
                 const rvolVal = gainerObj ? gainerObj.rvol : 1.0;
