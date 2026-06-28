@@ -1,84 +1,26 @@
-/* Global Dark Theme Trading Dashboard CSS */
+@import "tailwindcss";
 
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
-
-:root {
-  --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  
-  /* Color Palette */
-  --bg-main: #0b0e14;
-  --bg-card: #151a24;
-  --bg-card-hover: #1e2533;
-  --bg-input: #1a202c;
-  
-  --border-color: #232a38;
-  --border-focus: #3b82f6;
-  
-  --text-main: #f3f4f6;
-  --text-muted: #8b9bb4;
-  --text-dim: #54657e;
-  
-  --color-up: #00c878;      /* Neon Green */
-  --color-down: #ff3b69;    /* Neon Red */
-  --color-accent: #3b82f6;  /* Neon Blue */
-  --color-warning: #f59e0b; /* Amber */
-  --color-success: #10b981; /* Emerald */
-  
-  /* Fibonacci Line Colors */
-  --fib-golden: #ffd700;
-  --fib-0382: #4ade80;
-  --fib-0500: #60a5fa;
-  --fib-0618: #a78bfa;
-  --fib-0786: #f472b6;
-  --fib-0886: #fb923c;
-  --fib-other: #94a3b8;
-}
-
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  background-color: var(--bg-main);
-  color: var(--text-main);
-  font-family: var(--font-sans);
-  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-  overflow-x: hidden;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* Animations */
-@keyframes pulseGlow {
-  0%, 100% {
-    opacity: 0.6;
-    transform: scale(1);
+@layer base {
+  :root {
+    --bg-main: #0b0f19;
+    --bg-card: #141b2d;
+    --bg-card-hover: #1f2a40;
+    --bg-input: #1a202c;
+    --border-color: #1f2937;
+    
+    --color-green: #10b981;
+    --color-red: #ef4444;
+    --color-yellow: #f59e0b;
+    --color-blue: #3b82f6;
+    
+    --text-main: #f3f4f6;
+    --text-muted: #9ca3af;
   }
-  50% {
-    opacity: 1;
-    transform: scale(1.05);
-  }
-}
 
-@keyframes slideIn {
-  from {
-    transform: translateY(10px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
+  body {
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   }
 }
 
@@ -89,23 +31,54 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--bg-main);
+  background: #0b0f19;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border-color);
+  background: #1f2937;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-dim);
+  background: #374151;
 }
 
-/* Common Utilities */
-.glow-text-green {
-  text-shadow: 0 0 10px rgba(0, 200, 120, 0.4);
+/* Glowing text and status elements */
+.glow-green {
+  text-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
 }
 
-.glow-text-red {
-  text-shadow: 0 0 10px rgba(255, 59, 105, 0.4);
+.glow-red {
+  text-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+}
+
+.glow-yellow {
+  text-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+}
+
+.glow-blue {
+  text-shadow: 0 0 10px rgba(59, 82, 246, 0.4);
+}
+
+/* Custom cards styling */
+.trading-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  transition: all 0.2s ease;
+}
+
+.trading-card:hover {
+  border-color: #374151;
+}
+
+/* Hide arrow spinner in number inputs */
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+  -webkit-appearance: none; 
+  margin: 0; 
+}
+input[type=number] {
+  -moz-appearance: textfield;
 }
