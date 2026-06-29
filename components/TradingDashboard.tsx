@@ -77,6 +77,63 @@ export default function TradingDashboard() {
   const [checklist, setChecklist] = useState<Record<string, boolean[]>>({});
   const [journal, setJournal] = useState<JournalEntry[]>([]);
 
+  // Real-time API States & Logic
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastRefreshed, setLastRefreshed] = useState<string>("미연동 (Mock)");
+
+  const fetchLiveMarketData = async () => {
+    setIsRefreshing(true);
+    try {
+      const res = await fetch("/api/market-data");
+      if (res.ok) {
+        const data = await res.json();
+        const quotes = data.quotes || [];
+
+        // 1. Update Market Indices
+        setMarketIndices(prev => prev.map(item => {
+          const live = quotes.find((q: any) => q.symbol === item.symbol);
+          if (live) {
+            return {
+              ...item,
+              price: live.price,
+              changePercent: live.changePercent,
+              volume: live.volume,
+              isAboveVwap: live.isAboveVwap,
+              direction: live.direction
+            };
+          }
+          return item;
+        }));
+
+        // 2. Update Sectors
+        setRawSectors(prev => prev.map(item => {
+          const live = quotes.find((q: any) => q.symbol === item.symbol);
+          if (live) {
+            return {
+              ...item,
+              changePercent: live.changePercent,
+              volume: live.volume
+            };
+          }
+          return item;
+        }));
+
+        setLastRefreshed(new Date().toLocaleTimeString("ko-KR"));
+      }
+    } catch (e) {
+      console.error("Failed to fetch live market data:", e);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  // Poll for live data every 30 seconds
+  useEffect(() => {
+    fetchLiveMarketData();
+    const interval = setInterval(fetchLiveMarketData, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Manual inputs for Screener Form
   const [newTicker, setNewTicker] = useState("");
   const [newName, setNewName] = useState("");
@@ -569,11 +626,19 @@ export default function TradingDashboard() {
         <section className="trading-card flex flex-col justify-between">
           <div>
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-bold text-slate-200">1. Market Check</h2>
+              <div>
+                <h2 className="text-lg font-bold text-slate-200">1. Market Check</h2>
+                <span className="text-[10px] text-slate-500 font-bold block">
+                  마지막 갱신: {lastRefreshed} {isRefreshing && "🔄"}
+                </span>
+              </div>
               <div className="flex gap-2">
-                <button onClick={() => applyMarketPreset("bull")} className="px-2 py-1 text-xs bg-green-950 border border-green-800 text-green-400 font-bold rounded">Bullish</button>
-                <button onClick={() => applyMarketPreset("neutral")} className="px-2 py-1 text-xs bg-yellow-950 border border-yellow-800 text-yellow-400 font-bold rounded">Mixed</button>
-                <button onClick={() => applyMarketPreset("bear")} className="px-2 py-1 text-xs bg-red-950 border border-red-800 text-red-400 font-bold rounded">Bearish</button>
+                <button onClick={fetchLiveMarketData} disabled={isRefreshing} className="px-2 py-1 text-xs bg-indigo-950 border border-indigo-800 text-indigo-400 font-bold rounded cursor-pointer disabled:opacity-50">
+                  {isRefreshing ? "갱신중" : "실시간조회"}
+                </button>
+                <button onClick={() => applyMarketPreset("bull")} className="px-2 py-1 text-xs bg-green-950 border border-green-800 text-green-400 font-bold rounded cursor-pointer">Bullish</button>
+                <button onClick={() => applyMarketPreset("neutral")} className="px-2 py-1 text-xs bg-yellow-950 border border-yellow-800 text-yellow-400 font-bold rounded cursor-pointer">Mixed</button>
+                <button onClick={() => applyMarketPreset("bear")} className="px-2 py-1 text-xs bg-red-950 border border-red-800 text-red-400 font-bold rounded cursor-pointer">Bearish</button>
               </div>
             </div>
             
