@@ -84,7 +84,7 @@ export default function TradingDashboard() {
   const fetchLiveMarketData = async () => {
     setIsRefreshing(true);
     try {
-      const res = await fetch("/api/market-data");
+      const res = await fetch(`/api/market-data?t=${Date.now()}`);
       if (res.ok) {
         const data = await res.json();
         const quotes = data.quotes || [];
