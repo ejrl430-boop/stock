@@ -102,6 +102,8 @@ export default function TradingDashboard() {
       if (res.ok) {
         const data = await res.json();
         const quotes = data.quotes || [];
+        console.log("Symbols requested:", allSymbols);
+        console.log("Quotes response:", quotes);
 
         // 1. Update Market Indices
         setMarketIndices(prev => prev.map(item => {
