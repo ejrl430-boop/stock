@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   MarketIndexInfo,
   SectorData,
@@ -77,6 +77,12 @@ export default function TradingDashboard() {
   const [checklist, setChecklist] = useState<Record<string, boolean[]>>({});
   const [journal, setJournal] = useState<JournalEntry[]>([]);
 
+  // Keep candidates in a ref to fetch their live prices without infinite loops in useEffect
+  const candidatesRef = useRef(candidates);
+  useEffect(() => {
+    candidatesRef.current = candidates;
+  }, [candidates]);
+
   // Real-time API States & Logic
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState<string>("미연동 (Mock)");
@@ -84,7 +90,15 @@ export default function TradingDashboard() {
   const fetchLiveMarketData = async () => {
     setIsRefreshing(true);
     try {
-      const res = await fetch(`/api/market-data?t=${Date.now()}`);
+      const defaultSymbols = [
+        "SPY", "QQQ", "IWM", "DIA", // Indices
+        "SMH", "SOXX", "XLK", "XLC", "XLY", "XLF", "XLV", "XBI", "IBB", "XLE", "XLI", "ARKK" // Sectors
+      ];
+      
+      const candidateTickers = candidatesRef.current.map(c => c.ticker);
+      const allSymbols = Array.from(new Set([...defaultSymbols, ...candidateTickers])).join(",");
+
+      const res = await fetch(`/api/market-data?symbols=${allSymbols}&t=${Date.now()}`);
       if (res.ok) {
         const data = await res.json();
         const quotes = data.quotes || [];
@@ -117,6 +131,45 @@ export default function TradingDashboard() {
           }
           return item;
         }));
+
+        // 3. Update Candidates (Screener Results) real-time prices & changePercent
+        setCandidates(prev => {
+          if (prev.length === 0) return prev;
+
+          const spyQuote = quotes.find((q: any) => q.symbol === "SPY");
+          const qqqQuote = quotes.find((q: any) => q.symbol === "QQQ");
+          const spyChange = spyQuote?.changePercent || 0;
+          const qqqChange = qqqQuote?.changePercent || 0;
+
+          // Re-calculate strong sectors based on new sector ETF quotes
+          const latestSectors = processSectors(
+            quotes.filter((q: any) => defaultSymbols.slice(4).includes(q.symbol)), // Sector ETFs only
+            spyChange,
+            qqqChange
+          );
+          const latestStrongSectors = latestSectors.filter(s => s.status === "Strong").map(s => s.name);
+
+          const updated = prev.map(c => {
+            const live = quotes.find((q: any) => q.symbol === c.ticker);
+            if (live) {
+              const price = live.price || c.price;
+              const changePercent = live.changePercent !== undefined ? live.changePercent : c.changePercent;
+              const volume = live.volume || c.volume;
+              return {
+                ...c,
+                price,
+                changePercent,
+                volume,
+                dollarVolume: price * volume,
+                relativeStrengthVsSPY: changePercent - spyChange,
+                relativeStrengthVsQQQ: changePercent - qqqChange,
+              };
+            }
+            return c;
+          });
+
+          return processCandidatesList(updated, latestStrongSectors);
+        });
 
         setLastRefreshed(new Date().toLocaleTimeString("ko-KR"));
       }

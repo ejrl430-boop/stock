@@ -83,10 +83,18 @@ async function fetchSymbolData(symbol: string) {
 }
 
 export async function GET(request: NextRequest) {
-  const symbols = [
+  const { searchParams } = new URL(request.url);
+  const symbolsParam = searchParams.get("symbols");
+
+  let symbols = [
     "SPY", "QQQ", "IWM", "DIA", // Indices
     "SMH", "SOXX", "XLK", "XLC", "XLY", "XLF", "XLV", "XBI", "IBB", "XLE", "XLI", "ARKK" // Sectors
   ];
+
+  if (symbolsParam) {
+    // Deduplicate and split by comma
+    symbols = Array.from(new Set(symbolsParam.split(",").map(s => s.trim().toUpperCase()).filter(Boolean)));
+  }
 
   try {
     // Run all fetches in parallel
